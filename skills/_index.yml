@@ -1,0 +1,70 @@
+generated: '2026-09-13'
+method: generated
+source: https://mcp.globaldata.com/ (Sections 02-10)
+summary: >-
+  Six packaged Agent Skills for the GlobalData Intelligence Center MCP, one per marquee flow in
+  GlobalData's own worked-examples section, plus one orientation skill for the connect-and-discover
+  lifecycle that every other flow depends on.
+grounding: >-
+  There is NO OpenAPI for this provider, so these skills are grounded in GlobalData's published MCP
+  tool reference rather than in operationIds. Every tool name used appears verbatim in GlobalData's
+  own domain explorer (Section 06/07), and every call sequence mirrors a worked example GlobalData
+  publishes (Section 09) or its stated nine-step query lifecycle (Section 08). No tool, parameter,
+  endpoint or caveat was invented. Input SCHEMAS are deliberately not reproduced — the live
+  tools/list is OAuth-gated and returned HTTP 401, so parameter shapes are shown only where
+  GlobalData documents them in prose or in an example.
+provider_published_skills:
+  found: false
+  probes:
+    - {url: 'https://mcp.globaldata.com/AGENTS.md', status: 401, note: catch-all, not a gated document}
+    - {url: 'https://www.globaldata.com/AGENTS.md', status: 404}
+    - {url: 'https://mcp.globaldata.com/skills', status: 401, note: catch-all}
+  checked: '2026-09-13'
+skills:
+  - name: globaldata-connect-and-orient
+    file: globaldata-connect-and-orient.md
+    summary: >-
+      Connect, authenticate, and establish what the subscription actually exposes before spending a
+      query. Covers the entitlement-versus-progressive-discovery distinction and the documented
+      failure modes (not_entitled, and "tool not found" after a successful reveal).
+    tools: [list_domains, get_capabilities, tool_search, discover_capabilities, reveal_advanced, search]
+  - name: globaldata-company-profile
+    file: globaldata-company-profile.md
+    summary: >-
+      Identify a company, pull financials and structure, then chain into deals, news, filings, jobs
+      and patents on company_id, the primary join key across every content domain.
+    tools: [resolve_entities, list_companies, get_company_descriptions, get_company_analytics, list_deals, list_newsarticles, list_filing, list_jobs, list_patents]
+  - name: globaldata-deal-activity
+    file: globaldata-deal-activity.md
+    summary: >-
+      Scan M&A, licensing, partnership and JV activity by sector or geography and aggregate it,
+      carrying GlobalData's own caveats about undisclosed values and post-close announcements.
+    tools: [resolve_entities, list_deals, get_deals_descriptions, get_deals_analytics]
+  - name: globaldata-filings-evidence
+    file: globaldata-filings-evidence.md
+    summary: >-
+      Find a filing and extract quotable passages with get_filingsentences rather than downloading
+      full text, including the time-limited access URL behaviour on full-document retrieval.
+    tools: [list_filing, get_filingsentences, get_filing_document, get_filing_document_text, get_filings_analytics]
+  - name: globaldata-hiring-signal
+    file: globaldata-hiring-signal.md
+    summary: >-
+      Read hiring intent from the near-real-time jobs domain and turn it into a trend, with the
+      deduplication and thin-bucket salary caveats GlobalData states.
+    tools: [resolve_entities, list_jobs, get_job_descriptions, get_jobs_analytics, get_jobs_analytics_multi_view]
+  - name: globaldata-news-sentiment
+    file: globaldata-news-sentiment.md
+    summary: >-
+      Track news and social volume and sentiment over time, carrying the model-derived-sentiment
+      caveat and the licensed-corpus scope into the report.
+    tools: [resolve_entities, list_newsarticles, get_newsarticle_descriptions, get_news_analytics, list_socialmediaposts]
+skill_count: 6
+cross_cutting_rules_embedded:
+  - resolve taxonomy terms before filtering; confidence below 0.65 is dropped into dropped_filters
+  - companyName and keyword are free text and must not be resolved
+  - at least one selective filter is required or the call is rejected pre-flight as result_set_too_large
+  - verify applied_filters before quoting any count; present resolution before data
+  - chain domains on company_id, not on company name
+  - paginate with pagination.next_page.example_args
+  - prefer search(domain, keywords) immediately after a reveal, before the client tool list refreshes
+checked: '2026-09-13'

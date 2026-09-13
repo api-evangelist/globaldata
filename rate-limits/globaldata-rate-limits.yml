@@ -1,0 +1,43 @@
+generated: '2026-09-13'
+method: searched
+source: https://mcp.globaldata.com/ (Section 12, FAQ — "Are my queries logged?")
+summary: >-
+  GlobalData states that rate limiting exists and names the unit it applies to, but publishes no
+  number, no window, and no response header. An agent has no runtime signal: it cannot read a
+  remaining budget, cannot tell how long to back off, and will discover a limit only by being
+  refused. What IS published is a different guard — a pre-flight rejection on unselective queries,
+  which is a result-size control, not a rate control, and is recorded separately below.
+limit_count: 0
+limits: []
+stated_policy:
+  published: true
+  text: >-
+    "Yes — each MCP call is recorded against your credential for usage analytics and rate limiting.
+    Do not pass personally identifiable information in query strings."
+  scope: per credential
+  window: not published
+  limit: not published
+  burst: not published
+  source: https://mcp.globaldata.com/ (Section 12)
+response_headers:
+  published: none
+  probed: >-
+    An anonymous POST to https://mcp.globaldata.com/mcp returns 401 before any rate-limit accounting,
+    and its response headers carry no X-RateLimit-*, RateLimit-* or Retry-After field. Headers on an
+    authenticated 200 could not be observed — no credential is available to this pipeline.
+  checked: '2026-09-13'
+exhaustion_status: not published
+retry_after: not published
+related_guard:
+  name: result_set_too_large
+  kind: pre-flight result-size rejection, NOT a rate limit
+  behaviour: >-
+    A query carrying no selective filter is rejected before execution. The error lists the filters
+    which would make the query valid — a genuinely agent-usable remediation, unlike the rate limit.
+  example: a bare geography filter with nothing else is rejected
+  source: https://mcp.globaldata.com/ (Section 08)
+gap: >-
+  This is the clearest machine-readability gap in an otherwise well-documented agent surface.
+  Publishing RateLimit-Limit / RateLimit-Remaining / RateLimit-Reset (RFC 9331 draft shape) or even
+  a documented number and window would let an agent pace itself instead of retrying blind.
+checked: '2026-09-13'

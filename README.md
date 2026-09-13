@@ -64,4 +64,8 @@
 > Full detail: **[Where this data comes from](https://apievangelist.com/about/where-our-data-comes-from)**
 <!-- API-EVANGELIST-PROVENANCE:END -->
 
-GlobalData is a company surfaced via the API Evangelist harvest backlog (source: absent-parent) and added to the network as a stub for full-pipeline profiling.
+GlobalData Plc (LSE: DATA) is a London-based data, analytics and insights company whose Intelligence Center platform covers companies, deals, news, filings, patents, job postings, research reports, projects and market data across 20+ industry verticals.
+
+Its machine-readable surface is agent-native rather than REST-first. GlobalData operates a first-party Model Context Protocol gateway at `mcp.globaldata.com` that exposes the estate as callable agent tools — one MCP server endpoint per vertical, all sharing a single tool interface over Streamable HTTP, behind OAuth 2.1 via GlobalData SSO. The gateway publishes a full developer reference at its host root, RFC 8414 and RFC 9728 OAuth metadata, and an Agentic Resource Discovery (AIR) manifest at `/.well-known/ai-catalog.json` advertising all 23 vertical endpoints.
+
+No OpenAPI, GraphQL SDL, AsyncAPI, Protobuf or SOAP contract is published anywhere, and there is no A2A agent card, security.txt, status page, dated changelog, published pricing or first-party SDK. The live tool schemas are OAuth-gated: an anonymous `tools/list` returns HTTP 401.

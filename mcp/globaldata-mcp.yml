@@ -1,0 +1,977 @@
+generated: '2026-09-13'
+method: searched
+source: https://mcp.globaldata.com/
+revised: '2026-09-13'
+name: GlobalData Intelligence Center MCP
+summary: >-
+  GlobalData Plc operates a first-party, production Model Context Protocol gateway at
+  mcp.globaldata.com that exposes its business-intelligence estate as callable agent tools.
+  The gateway is documented publicly at the host root ("GlobalData Intelligence Center — MCP
+  Developer Documentation"), advertises itself in a machine-readable Agentic Resource Discovery
+  manifest at /.well-known/ai-catalog.json, and publishes RFC 8414 / RFC 9728 OAuth metadata.
+  It is one MCP server endpoint per industry vertical, all sharing one tool interface.
+ownership: >-
+  First-party and unambiguous. mcp.globaldata.com is a GlobalData-controlled host; the
+  documentation page carries the GlobalData Plc registered-office footer (John Carpenter House,
+  John Carpenter Street, London EC4Y 0AN, registered in England No. 03925319), the AIR manifest
+  identifies the host as did:web:mcp.globaldata.com, authentication is delegated to GlobalData's
+  own SSO at login.globaldata.com, and support routes to DDStechSupport@globaldata.com.
+
+deployment:
+  mode: remote
+  endpoint: https://mcp.globaldata.com/{site}/mcp
+  auth: oauth
+  verified: probed
+  note: >-
+    Remote-only. There is no first-party stdio package: the Claude Desktop instructions in
+    GlobalData's own documentation use the generic third-party `npx -y mcp-remote <url>` bridge
+    pointed at the hosted endpoint, which is a client-side shim for a remote server, not a
+    GlobalData-published local server. Nothing named globaldata ships on npm or PyPI (both
+    names are squatted by unrelated third-party packages — see packages/).
+  probe:
+    url: https://mcp.globaldata.com/mcp
+    method: POST
+    body: '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
+    http_status: 401
+    response: '{"error":"Unauthorized: token required"}'
+    www_authenticate: >-
+      Bearer realm="GlobalData MCP",
+      resource_metadata="https://mcp.globaldata.com/.well-known/oauth-protected-resource/mcp"
+    checked: '2026-09-13'
+    note: >-
+      Every vertical endpoint probed (ads, disruptor, technology, mining, sport) returned the same
+      401. The live tool list with real inputSchema requires an authenticated session, so the tool
+      inventory below is transcribed from GlobalData's own published developer reference and the
+      AIR manifest — names, descriptions and availability are first-party, input schemas are NOT
+      captured and require authenticated introspection.
+  health:
+    url: https://mcp.globaldata.com/health
+    http_status: 200
+    body: Healthy
+
+transport:
+  protocol: Streamable HTTP
+  rpc: JSON-RPC 2.0
+  streaming: SSE on the same endpoint
+  accept_header: 'application/json, text/event-stream'
+  source: https://mcp.globaldata.com/ (Section 12, FAQ)
+
+discovery:
+  air_manifest:
+    url: https://mcp.globaldata.com/.well-known/ai-catalog.json
+    spec_version: '1.0'
+    http_status: 200
+    host_identifier: did:web:mcp.globaldata.com
+    entries: 23
+    file: ../well-known/globaldata-ai-catalog.json
+    note: >-
+      Agentic Resource Discovery manifest. Each entry is type application/mcp-server+json and
+      carries the endpoint URL, a description, the six always-on capabilities, and
+      representativeQueries. This is the machine-readable index of every vertical server.
+  documentation: https://mcp.globaldata.com/
+  oauth_authorization_server: https://mcp.globaldata.com/.well-known/oauth-authorization-server
+  oauth_protected_resource: https://mcp.globaldata.com/.well-known/oauth-protected-resource
+
+authentication:
+  model: OAuth 2.1 via GlobalData SSO
+  flows:
+    - id: authorization_code_pkce
+      label: OAuth 2.1 Authorization Code + PKCE
+      audience: interactive clients (claude.ai connectors, Copilot Studio, browsers)
+      authorization_server: https://login.globaldata.com
+      token_endpoint: https://login.globaldata.com/oauth/token
+      code_challenge_methods: [S256]
+      note: Redirect URI must be registered with the GlobalData DDS team before use.
+    - id: password
+      label: Credentials (resource owner password)
+      audience: server-to-server agents and scripts
+      token_endpoint: https://login.globaldata.com/oauth/token
+      grant_type: password
+      scopes: [openid, profile, email, offline_access]
+      note: Exchanges a GlobalData username and password for a bearer token, expires_in 3600.
+    - id: client_credentials
+      label: Client credentials
+      audience: declared in the gateway's own RFC 8414 metadata
+      source: https://mcp.globaldata.com/.well-known/oauth-authorization-server
+  sso_options:
+    - GlobalData username/password
+    - Microsoft Entra ID
+    - Google Workspace
+    - Okta / enterprise SSO
+  entitlements: >-
+    Tool visibility is driven by subscription entitlement, not only by the reveal step. A domain
+    the subscription does not include will not reveal and the response says so (not_entitled).
+  source: https://mcp.globaldata.com/ (Section 04)
+
+architecture:
+  tiers:
+    - tier: 1
+      name: MCPGateway
+      role: SSO auth, routing, session state, tool registry
+    - tier: 2
+      name: CommonContent MCP Server
+      role: tool execution, entity resolver, ElasticSearch query builder (BM25 + KNN)
+    - tier: 3
+      name: Data layer
+      role: 6 ElasticSearch clusters, SQL databases, market data APIs
+  join_key:
+    field: company_id
+    note: >-
+      Company ID (returned by list_companies, and by resolve_entities as company_id) is the
+      primary join key across every content domain. A second identifier, cdms_company_id, is
+      returned alongside it and is used only by a handful of tools that ask for it by name.
+  source: https://mcp.globaldata.com/ (Section 02)
+
+progressive_discovery:
+  model: >-
+    The gateway does not expose all tools at connect time. Seven gateway tools are always visible;
+    a domain's standard tools appear only after discover_capabilities('<domain>'), and its
+    analytics tools after reveal_advanced('<domain>'). Both emit notifications/tools/list_changed.
+  levels:
+    - level: 0
+      label: Always on
+      unlock: none
+    - level: 1
+      label: Standard
+      unlock: discover_capabilities('<domain>')
+    - level: 2
+      label: Advanced / analytics
+      unlock: reveal_advanced('<domain>')
+  caveat: >-
+    GlobalData's own documentation warns that a freshly revealed tool may not be callable by name
+    until the client re-fetches tools/list, and recommends search(domain, keywords) immediately
+    after a reveal.
+  source: https://mcp.globaldata.com/ (Section 03)
+
+response_envelope:
+  fields:
+    - {field: result, meaning: the data payload}
+    - {field: delegated_tool, meaning: which tool the search facade actually ran}
+    - {field: route, meaning: why that tool was chosen}
+    - {field: applied_filters, meaning: true scope after canonicalisation — verify before quoting counts}
+    - {field: resolved, meaning: each input term, its canonical value, and a 0-1 confidence score}
+    - {field: dropped_filters, meaning: filters that could not be honored}
+    - {field: warnings, meaning: anything silently lost}
+    - {field: scope_warning, meaning: raised when a primary filter could not apply and scope degraded}
+    - {field: pagination, meaning: 'page, page_size, returned, total_records, total_pages, has_more, next_page.example_args'}
+    - {field: routing_hint, meaning: sibling tools to try when routing was ambiguous}
+    - {field: no_results_hint, meaning: sibling tools to try when results are empty}
+    - {field: unknown_fields, meaning: fields passed to fields= that did not match}
+  preflight_rejection: >-
+    A query with no selective filter is rejected before execution with a result_set_too_large
+    error that lists the filters which would make it valid.
+  source: https://mcp.globaldata.com/ (Section 08)
+
+entity_resolution:
+  tool: resolve_entities
+  pipeline: BM25 + KNN hybrid search against a GlobalData taxonomy ElasticSearch index
+  confidence_threshold: 0.65
+  below_threshold: filter is dropped and reported in dropped_filters
+  fixed_choice_fields: >-
+    dealType, sentiment, newsCategory take an exact/alias match first and, since July 2026, an
+    AI-assisted fuzzy match as a second attempt before a value is dropped.
+  resolvable_dimensions:
+    common: [industry, location, theme, hqCountry]
+    deals: [dealType, dealStatus, dealRationale, acquirerCountry]
+    news: [newsCategory, sentiment]
+    mining: [commodity, mineMethod, mineStage]
+  free_text_passthrough: [companyName, keyword, job title]
+  source: https://mcp.globaldata.com/ (Sections 03, 08)
+
+versioning:
+  promise: >-
+    Tool changes are additive and backward-compatible. Breaking changes ship as new tool names;
+    old names are deprecated with advance notice and a migration window before removal.
+  notification: notifications/tools/list_changed
+  fresh_sessions: every initialize / tools/list returns the latest tool definitions
+  source: https://mcp.globaldata.com/ (Section 11)
+
+tools:
+  status: published
+  method: searched
+  schema_capture: >-
+    NOT captured. inputSchema for each tool requires an authenticated tools/list call; the
+    anonymous probe returns 401. Names, descriptions and availability below are transcribed
+    verbatim-in-substance from GlobalData's own published developer reference.
+  gateway:
+    - name: list_domains
+      level: 0
+      description: >-
+        Lists all available domains for your vertical with their unlock status and the exact
+        command to reveal each one.
+    - name: discover_capabilities
+      level: 0
+      description: Reveals a domain's standard tools for this session; emits notifications/tools/list_changed.
+    - name: reveal_advanced
+      level: 0
+      description: Reveals a domain's analytics tools alongside its standard set.
+    - name: get_capabilities
+      level: 0
+      description: Returns the full domain and tool catalog without revealing or enabling anything.
+    - name: tool_search
+      level: 0
+      description: Searches all tools by keyword across all domains, including unrevealed ones.
+    - name: search
+      level: 0
+      description: >-
+        Universal entry point. Accepts a natural-language query plus optional filters, resolves
+        entities internally, routes to the right tool by intent, and returns data plus
+        delegated_tool, route and applied_filters. Dispatches to any tool, revealed or not.
+      note: 'Parameter renamed from query to keywords; query still works as a legacy alias.'
+    - name: resolve_entities
+      level: 0
+      description: >-
+        Maps free-text terms to canonical GlobalData taxonomy values with a 0-1 confidence score.
+
+domains:
+- domain: companies
+  tools:
+  - name: list_companies
+    level: standard
+    description: Search and list companies by name, industry, type, headquarters country, revenue range,
+      or keyword. Returns the Company ID join key.
+  - name: get_company_descriptions
+    level: standard
+    description: 'Full company profiles for one or more Company IDs: overview, financials, trading information,
+      parent/subsidiary relationships, sector classification, contacts.'
+  - name: get_company_analytics
+    level: advanced
+    description: Aggregate company data into buckets by industry, country, revenue band or financial year.
+- domain: deals
+  tools:
+  - name: list_deals
+    level: standard
+    description: Search M&A transactions, licensing agreements, partnerships and collaborations by deal
+      type, status, rationale, geography, company name or date range.
+  - name: get_deals_descriptions
+    level: standard
+    description: 'Full deal profiles for one or more Deal IDs: parties, disclosed financials, rationale,
+      advisors, investors, tags.'
+  - name: get_deals_analytics
+    level: advanced
+    description: Aggregate deal counts and values by deal type, status, year, geography, industry or theme.
+- domain: news
+  tools:
+  - name: list_newsarticles
+    level: standard
+    description: Search curated news articles by company, industry, theme, category, sentiment, location
+      or date range.
+  - name: get_newsarticle_descriptions
+    level: standard
+    description: Full article content for one or more article IDs, with sentiment score and tagged entities.
+  - name: get_news_analytics
+    level: advanced
+    description: Aggregate news volume and sentiment over time by company, industry, month or theme.
+- domain: filings
+  tools:
+  - name: list_filing
+    level: standard
+    description: Search regulatory and corporate filings — annual and quarterly reports, earnings call
+      transcripts, investor presentations.
+  - name: get_filingsentences
+    level: standard
+    description: Extract specific sentences or passages from a filing by keyword or topic.
+  - name: get_filing_document
+    level: standard
+    description: Returns the full structured filing document broken into labelled sections.
+  - name: get_filing_document_text
+    level: standard
+    description: Returns the raw full text of a filing via a time-limited cloud-storage access URL.
+  - name: get_filings_analytics
+    level: advanced
+    description: Aggregate filing volume and sentiment by filing type, sector, country or year.
+- domain: patents
+  tools:
+  - name: list_patents
+    level: standard
+    description: Search patents by IPC classification, application year, assignee, inventor country or
+      keyword.
+  - name: get_patent_descriptions
+    level: standard
+    description: 'Full patent record: abstract, IPC tree, inventors, applicant/assignee, filing and grant
+      dates.'
+- domain: jobs
+  tools:
+  - name: list_jobs
+    level: standard
+    description: Search job postings by title, occupation category, seniority, company, country, state/city
+      or posting date, with USD-normalised salary ranges.
+  - name: get_job_descriptions
+    level: standard
+    description: 'Full job posting content: description text, salary min/max, education requirements,
+      occupation classification, skills tags.'
+  - name: get_jobs_analytics
+    level: advanced
+    description: Aggregate job posting data for hiring trend analysis by occupation, country, company,
+      education type or date.
+  - name: get_jobs_analytics_multi_view
+    level: advanced
+    description: Fetches multiple jobs analytics groupings simultaneously in one call.
+- domain: contacts
+  availability: construction (site 63) and meedprojects (site 71) only; requires a contacts entitlement
+  tools:
+  - name: list_contacts
+    level: standard
+    description: Search decision-maker and senior professional contacts at tracked companies by name,
+      job title, department, company or country.
+- domain: reports
+  tools:
+  - name: list_reports
+    level: standard
+    description: Search GlobalData analyst research reports — market forecasts, sector analyses, country
+      intelligence, thematic studies.
+  - name: get_report_descriptions
+    level: standard
+    description: 'Full report details: abstract, key findings, scope, methodology, lead analyst, publication
+      date.'
+- domain: social
+  tools:
+  - name: list_socialmediaposts
+    level: standard
+    description: Search social media posts mentioning tracked companies, industries or themes, with sentiment
+      scores.
+- domain: buying_signals
+  availability: renamed from leads
+  tools:
+  - name: list_buying_signals
+    level: standard
+    description: Retrieve actionable sales lead records — BD-relevant events classified by supplier relevance,
+      sourced from deals, hiring, regulatory events and news triggers.
+  - name: get_buying_signals_analytics
+    level: advanced
+    description: Aggregate buying signal volume by signal type, company or month.
+- domain: innovation
+  availability: construction (site 63) only
+  tools:
+  - name: list_innovations
+    level: standard
+    description: 'Search construction and infrastructure innovation records: new technologies, start-up
+      activity, R&D initiatives, disruptive products.'
+- domain: market_data
+  availability: subscription entitlement required; resolve_entities not required
+  tools:
+  - name: get_market_data_analytics
+    level: standard
+    description: Quantitative market data — sector sizing, market share, CAGR, growth forecasts, production
+      capacity. Backed by GlobalData's structured data API, which performs its own entity matching.
+- domain: mine_projects
+  availability: mining (site 58) only
+  tools:
+  - name: list_mineprojects
+    level: standard
+    description: Search mining projects by commodity, mine method, development stage, country or company,
+      with resource estimates and production status.
+  - name: get_mine_descriptions
+    level: standard
+    description: 'Full detail for a single mineId: description, project value, timeline, equity partners,
+      operators, location, annual production by commodity and year.'
+- domain: mining_cost_curve
+  availability: mining (site 58) only; sibling to mine_projects
+  tools:
+  - name: list_mining_cost_curve
+    level: standard
+    description: Search mining production cost curve records by commodity, cost curve type, product type,
+      mine or year.
+  - name: get_mining_cost_curve_analytics
+    level: advanced
+    description: Cross-mine/company/country production cost benchmarking with cumulative production and
+      chart-ready cost bars.
+- domain: projects
+  availability: construction (site 63) and meedprojects (site 71) only
+  tools:
+  - name: list_projects
+    level: standard
+    description: Search infrastructure and capital projects by stage, sector, value, geography, company
+      role, development likelihood or event status.
+  - name: get_project_descriptions
+    level: standard
+    description: 'Full project detail: description, value breakdown, timeline, involved companies and
+      roles, location, status.'
+  - name: get_projects_analytics
+    level: advanced
+    description: Aggregate project counts and investment value by status, industry, country or start date.
+- domain: fdi_projects
+  availability: available on every vertical
+  tools:
+  - name: list_fdiprojects
+    level: standard
+    description: Search Foreign Direct Investment projects worldwide by investing company, destination
+      country, sector or theme. Subscription entitlement required.
+- domain: ict_contracts
+  availability: technology (site 55) only; subscription entitlement required
+  tools:
+  - name: list_ict_contracts
+    level: standard
+    description: List IT software, service or telecom contract records, selected via a category parameter.
+  - name: get_ict_contract_descriptions
+    level: standard
+    description: 'Full ICT contract details for a company: vendor, client, contract value, duration, category.'
+  - name: get_ict_contract_analytics
+    level: advanced
+    description: Aggregate contract volume and value by vendor, client, industry, contract type, region
+      or year.
+- domain: pldb
+  availability: consumer (site 1) only
+  tools:
+  - name: list_pldb
+    level: standard
+    description: Search Product Lifecycle Database records by industry, location, closure material, closure
+      type or pack sub-type.
+- domain: global_ads
+  availability: available on every vertical
+  tools:
+  - name: list_globalads
+    level: standard
+    description: Search TV, print and YouTube advertising records for a company, with engagement metrics.
+  - name: get_globalads_descriptions
+    level: standard
+    description: Full ad record detail by ID.
+- domain: defence_projects
+  availability: ads (site 51) only
+  tools:
+  - name: list_defenceprojects
+    level: standard
+    description: Search aerospace, defence and security project records by sector, stage, value or geography.
+  - name: get_defenceproject_descriptions
+    level: standard
+    description: 'Full defence project detail: contractor, client, project value, description.'
+- domain: innovation_explorer
+  availability: disruptor (site 56) and insurance (site 64)
+  tools:
+  - name: list_innovationexplorer
+    level: standard
+    description: Search emerging-technology and disruptor innovation profiles by title, location or industry
+      taxonomy.
+  - name: get_innovationexplorer_descriptions
+    level: standard
+    description: 'Full innovation profile detail: overview, taxonomy, related companies.'
+- domain: power_plants
+  availability: power (site 62) only
+  tools:
+  - name: list_plants
+    level: standard
+    description: Search power generation plants across every technology type by technology, location,
+      status, capacity or company role.
+  - name: get_plant_descriptions
+    level: standard
+    description: Full power plant detail by ID.
+  - name: power_decommission_analyzer
+    level: standard
+    description: Identifies ageing plants at decommissioning risk.
+  - name: power_upcoming_plants
+    level: standard
+    description: Announced and under-construction plant pipeline.
+- domain: sports_athletes
+  availability: sport (site 84) only
+  tools:
+  - name: list_athletes
+    level: standard
+    description: Search athletes and players by sport discipline, country, gender or active/retired status.
+- domain: sports_venues
+  availability: sport (site 84) only
+  tools:
+  - name: list_venues
+    level: standard
+    description: Search venues and stadiums by sport discipline, country or operational status.
+- domain: sports_competitions
+  availability: sport (site 84) only; three-level hierarchy
+  tools:
+  - name: list_properties
+    level: standard
+    description: Search competition-series ('properties') by sport, country, year, competition type or
+      gender.
+  - name: list_competitions
+    level: standard
+    description: Search competitions, tournaments and leagues by sport, country, active status or year.
+  - name: list_calendarevents
+    level: standard
+    description: List calendar events (fixtures, rounds, matches) for a competition or property-series.
+- domain: sports_conferences
+  availability: sport (site 84) only
+  tools:
+  - name: list_conferences
+    level: standard
+    description: Search sport conferences and industry events by country/city, type, status or date range.
+- domain: sports_deals
+  availability: sport (site 84) only
+  tools:
+  - name: list_sponsorship_deals
+    level: standard
+    description: Sponsorship agreements between brands and rights-holders.
+  - name: list_media_deals
+    level: standard
+    description: Media and broadcast rights deals.
+  - name: list_bidding_deals
+    level: standard
+    description: Host-city / event hosting-rights bidding deals.
+  - name: list_financial_sport_deals
+    level: standard
+    description: Financial and M&A deals involving sport entities.
+  - name: get_sponsorship_deals_analytics
+    level: advanced
+    description: Aggregate sponsorship deal volume and value.
+  - name: get_media_deals_analytics
+    level: advanced
+    description: Aggregate media and broadcast rights deal volume and value.
+  - name: get_bidding_deals_analytics
+    level: advanced
+    description: Aggregate host-city and event bidding deal volume.
+  - name: get_financial_sport_deals_analytics
+    level: advanced
+    description: Aggregate financial and M&A sport deal volume and value.
+- domain: sports_brands
+  availability: sport (site 84) only
+  tools:
+  - name: list_sponsorshipbrands
+    level: standard
+    description: Search and rank sponsorship brands by industry, HQ, sport sponsored, beneficiary, relationship,
+      status or spend.
+- domain: stadium_projects
+  availability: sport (site 84) only
+  tools:
+  - name: list_stadium_projects
+    level: standard
+    description: Stadium Construction Database — stadium and arena construction and redevelopment projects.
+  - name: get_stadium_projects_analytics
+    level: advanced
+    description: Aggregate stadium project counts and value by country, stage, sector, contractor or year.
+- domain: sports_media_revenues
+  availability: sport (site 84) only; two-step pattern
+  tools:
+  - name: list_media_revenues
+    level: standard
+    description: Discover which media-rights revenue series exist for a sport property.
+  - name: compare_media_revenues
+    level: standard
+    description: Year-by-year media-rights revenue figures (US$m) for comparison across properties or
+      years.
+- domain: upstream
+  availability: oil and gas (site 61) only; SQL-backed
+  tools:
+  - name: og_blocks_listing
+    level: standard
+    description: Exploration block listings.
+  - name: og_blocks_details
+    level: standard
+    description: Exploration block detail.
+  - name: og_fields_listing
+    level: standard
+    description: Field listings.
+  - name: og_fields_details
+    level: standard
+    description: Field detail.
+  - name: og_international_wells_listing
+    level: standard
+    description: International well listings.
+  - name: og_international_wells_details
+    level: standard
+    description: International well detail.
+  - name: og_us_wells_list
+    level: standard
+    description: US well listings.
+  - name: og_us_wells_details
+    level: standard
+    description: US well detail.
+- domain: midstream
+  availability: oil and gas (site 61) only; SQL-backed
+  tools:
+  - name: og_gas_processing_listings
+    level: standard
+    description: Gas processing plant listings.
+  - name: og_gas_processing_details
+    level: standard
+    description: Gas processing plant detail.
+  - name: og_gas_storage_listing
+    level: standard
+    description: Gas storage listings.
+  - name: og_gas_storage_details
+    level: standard
+    description: Gas storage detail.
+  - name: og_liquid_storage_listing
+    level: standard
+    description: Liquid storage listings.
+  - name: og_liquid_storage_details
+    level: standard
+    description: Liquid storage detail.
+  - name: og_liquid_storage_analytics
+    level: advanced
+    description: Liquid storage analytics.
+  - name: og_lng_liquefaction_listing
+    level: standard
+    description: LNG liquefaction listings.
+  - name: og_lng_liquefaction_details
+    level: standard
+    description: LNG liquefaction detail.
+  - name: og_lng_regasification_listing
+    level: standard
+    description: LNG regasification listings.
+  - name: og_lng_regasification_details
+    level: standard
+    description: LNG regasification detail.
+  - name: og_pipelines_listing
+    level: standard
+    description: Pipeline listings.
+  - name: og_pipeline_details
+    level: standard
+    description: Pipeline detail.
+- domain: downstream
+  availability: oil and gas (site 61) only; SQL-backed
+  tools:
+  - name: og_petrochemicals_listing
+    level: standard
+    description: Petrochemical plant listings.
+  - name: og_petrochemical_details
+    level: standard
+    description: Petrochemical plant detail.
+  - name: og_refinery_listing
+    level: standard
+    description: Refinery listings.
+  - name: og_refinery_details
+    level: standard
+    description: Refinery detail.
+- domain: oilgas_energy_transition
+  availability: oil and gas (site 61) only; SQL-backed
+  tools:
+  - name: og_carbon_capture_listing
+    level: standard
+    description: Carbon capture (CCUS) project listings.
+  - name: og_carbon_capture_details
+    level: standard
+    description: Carbon capture project detail.
+  - name: og_hydrogen_plants_listing
+    level: standard
+    description: O&G hydrogen production plant listings — a separate implementation from Power's hydrogen-plants
+      tool; each cross-references the other to prevent misrouting.
+  - name: og_hydrogen_plants_details
+    level: standard
+    description: O&G hydrogen plant detail.
+- domain: equipment_and_services
+  availability: oil and gas (site 61) only; SQL-backed
+  tools:
+  - name: og_contracts_listing
+    level: standard
+    description: Services, equipment and construction contract listings.
+  - name: og_contract_details
+    level: standard
+    description: Contract detail.
+  - name: og_projects_listing
+    level: standard
+    description: Upstream and midstream project record listings.
+  - name: og_project_details
+    level: standard
+    description: Project detail.
+- domain: operation_metrics
+  availability: oil and gas (site 61) only; SQL-backed
+  tools:
+  - name: og_operational_metrics
+    level: standard
+    description: Company production, reserves and lifting-cost KPIs.
+- domain: tenders_and_contracts
+  availability: power (site 62) only
+  tools:
+  - name: list_power_tenders
+    level: standard
+    description: Power-sector tenders and contracts by category, segment, equipment, technology, location
+      or client/vendor.
+  - name: get_power_tenders_descriptions
+    level: standard
+    description: Full power tender detail.
+- domain: auctions
+  availability: power (site 62) only
+  tools:
+  - name: list_power_auctions
+    level: standard
+    description: Renewable-energy auction results, awarded capacity, clearing prices and tariffs.
+  - name: get_power_auction_descriptions
+    level: standard
+    description: Full power auction detail.
+- domain: td_projects
+  availability: power (site 62) only
+  tools:
+  - name: list_power_tnd_projects
+    level: standard
+    description: Transmission and distribution line and substation projects by type, location, status,
+      voltage or system operator.
+  - name: get_power_tnd_projects_descriptions
+    level: standard
+    description: Full T&D project detail.
+- domain: energy_storage_projects
+  availability: power (site 62) only
+  tools:
+  - name: list_power_storage
+    level: standard
+    description: Battery, pumped hydro and hydrogen storage projects by technology, location, capacity
+      or company role.
+  - name: get_power_storage_descriptions
+    level: standard
+    description: Full energy storage project detail.
+- domain: smart_grid_projects
+  availability: power (site 62) only
+  tools:
+  - name: list_smart_grid_projects
+    level: standard
+    description: AMI, DSM, EV charging, grid modernization and microgrid projects.
+- domain: power_energy_transition
+  availability: power (site 62) only
+  tools:
+  - name: list_hydrogen_plants
+    level: standard
+    description: Power-sector hydrogen plants by operator, process, technology or development stage.
+  - name: get_hydrogen_plant_descriptions
+    level: standard
+    description: Full hydrogen plant detail.
+- domain: equipment_markets
+  availability: power (site 62) only; SQL-backed
+  tools:
+  - name: list_equipment_markets
+    level: standard
+    description: Power equipment market value, volume and capacity by technology, region or year.
+tool_counts:
+  gateway_always_on: 7
+  domain_tools_documented: 115
+  domains_documented: 43
+  note: Counts are of tools named in GlobalData's published developer reference. The live, entitlement-filtered
+    tool list per session requires an authenticated tools/list call.
+servers:
+- slug: ads
+  name: Aerospace, Defence & Security
+  endpoint: https://mcp.globaldata.com/ads/mcp
+  description: Company, deal, and news intelligence for the aerospace, defence, and security sector, plus
+    aerospace, defence and security project tracking.
+  representative_queries:
+  - major defence projects awarded this year
+  - recent deals among aerospace and defence contractors
+  - news on new security technology contracts
+  - companies bidding on aerospace and defence projects
+- slug: agri
+  name: Agribusiness
+  endpoint: https://mcp.globaldata.com/agri/mcp
+  description: Company, deal, filings, patent, and news intelligence for the agribusiness sector, covering
+    company profiles, M&A activity, patents, and industry news.
+  representative_queries:
+  - recent M&A deals in the agribusiness sector
+  - patents filed for crop protection technologies
+  - leading agribusiness companies by revenue
+  - news on agricultural technology partnerships
+- slug: apparel
+  name: Apparel
+  endpoint: https://mcp.globaldata.com/apparel/mcp
+  description: Company, deal, filings, patent, and news intelligence for the apparel and fashion sector,
+    covering company profiles, M&A activity, and industry news.
+  representative_queries:
+  - recent M&A deals among apparel retailers
+  - news on sustainable fashion initiatives
+  - leading apparel companies by revenue
+  - patents filed for textile innovation
+- slug: automotive
+  name: Automotive
+  endpoint: https://mcp.globaldata.com/automotive/mcp
+  description: Company, deal, filings, patent, and news intelligence for the automotive sector, covering
+    company profiles, M&A activity, patents, and industry news.
+  representative_queries:
+  - recent patents filed in electric vehicle battery technology
+  - M&A deals among automotive suppliers
+  - news on new EV manufacturing plants
+  - leading automotive companies by employee count
+- slug: celentintelligence
+  name: Celent Intelligence
+  endpoint: https://mcp.globaldata.com/celentintelligence/mcp
+  description: Access to Celent's financial services and insurance research report library.
+  representative_queries:
+  - latest Celent reports on core banking platforms
+  - Celent research on insurance claims technology
+  - recent Celent reports comparing payment processors
+- slug: construction
+  name: Construction
+  endpoint: https://mcp.globaldata.com/construction/mcp
+  description: Company, deal, filings, and news intelligence for the construction sector, plus construction
+    project tracking, project contacts, and construction innovation data.
+  representative_queries:
+  - major construction projects underway in the Middle East
+  - who are the key contacts on a specific construction project
+  - recent innovations in modular construction
+  - construction companies with the largest project pipelines
+- slug: consumer
+  name: Consumer
+  endpoint: https://mcp.globaldata.com/consumer/mcp
+  description: Company, deal, and news intelligence for consumer goods, plus product lifecycle data, product
+    launch analytics, Pack-Track packaging intelligence, ingredient profiles, and pricing intelligence.
+  representative_queries:
+  - new product launches in the snacks category last year
+  - ingredient trends in plant-based beverages
+  - packaging formats gaining share in personal care
+  - pricing intelligence for private-label skincare products
+- slug: disruptor
+  name: Disruptor
+  endpoint: https://mcp.globaldata.com/disruptor/mcp
+  description: Company, deal, and news intelligence on market-disrupting businesses and technologies,
+    plus disruptor-specific innovation tracking and ICT contract and client-prospecting data.
+  representative_queries:
+  - which disruptive companies are innovating in fintech
+  - recent ICT contracts awarded in the telecoms sector
+  - innovation projects tracked for disruptor companies
+  - latest deals involving disruptive technology startups
+- slug: explorer
+  name: Explorer
+  endpoint: https://mcp.globaldata.com/explorer/mcp
+  description: Cross-sector company, deal, patent, filings, and news intelligence for open-ended exploration
+    across GlobalData's industry coverage.
+  representative_queries:
+  - which companies are expanding into renewable energy
+  - recent deals across multiple industries this month
+  - news mentioning a specific company's new product
+  - patents filed by a company across all sectors
+- slug: financialservices
+  name: Financial Services
+  endpoint: https://mcp.globaldata.com/financialservices/mcp
+  description: Company, deal, filings, patent, and news intelligence for the financial services sector,
+    covering company profiles, M&A activity, regulatory filings, and industry news.
+  representative_queries:
+  - top financial services M&A deals this year
+  - which companies filed the most fintech patents
+  - recent news on digital banking launches
+  - job postings signaling fintech expansion
+- slug: foodservice
+  name: Foodservice
+  endpoint: https://mcp.globaldata.com/foodservice/mcp
+  description: Company, deal, and news intelligence for the foodservice sector, plus product lifecycle
+    tracking for menu and product innovation.
+  representative_queries:
+  - new menu items launched by major restaurant chains
+  - recent deals among foodservice companies
+  - product lifecycle data for a specific food brand
+  - foodservice companies expanding internationally
+- slug: insurance
+  name: Insurance
+  endpoint: https://mcp.globaldata.com/insurance/mcp
+  description: Company, deal, filings, patent, and news intelligence for the insurance sector, covering
+    company profiles, M&A activity, regulatory filings, and industry news.
+  representative_queries:
+  - recent M&A deals among insurance companies
+  - regulatory filings for a specific insurer
+  - news on insurtech partnerships
+  - leading companies by revenue in the insurance industry
+- slug: meedprojects
+  name: MEED Projects
+  endpoint: https://mcp.globaldata.com/meedprojects/mcp
+  description: Middle East and North Africa infrastructure project tracking, including project details
+    and key project contacts, alongside company, deal, and news intelligence.
+  representative_queries:
+  - major infrastructure projects planned in Saudi Arabia
+  - key contacts for a specific MEED-tracked project
+  - recent news on Gulf construction contracts
+  - companies bidding on MENA infrastructure projects
+- slug: mining
+  name: Mining
+  endpoint: https://mcp.globaldata.com/mining/mcp
+  description: Company, deal, and news intelligence for the mining sector, plus mine project tracking
+    and mine cost curve analysis.
+  representative_queries:
+  - active mine projects for copper in South America
+  - cost curve position of the largest iron ore producers
+  - recent M&A deals among gold mining companies
+  - news on new mining licenses granted in Africa
+- slug: oilgas
+  name: Oil & Gas
+  endpoint: https://mcp.globaldata.com/oilgas/mcp
+  description: Company, deal, and news intelligence for the oil and gas sector, spanning upstream, midstream,
+    and downstream operations, equipment and services, operational metrics, and energy transition data.
+  representative_queries:
+  - upstream oil and gas projects sanctioned this year
+  - midstream pipeline projects under development
+  - which companies provide oilfield equipment and services
+  - downstream refinery capacity additions planned globally
+- slug: packaging
+  name: Packaging
+  endpoint: https://mcp.globaldata.com/packaging/mcp
+  description: Company, deal, and news intelligence for the packaging sector, plus product lifecycle data,
+    launch analytics, Pack-Track packaging intelligence, ingredient profiles, and pricing data.
+  representative_queries:
+  - which packaging formats are growing fastest in beverages
+  - recent product launches using recyclable packaging
+  - pricing trends for flexible packaging materials
+  - companies leading in sustainable packaging innovation
+- slug: power
+  name: Power
+  endpoint: https://mcp.globaldata.com/power/mcp
+  description: Company, deal, and news intelligence for the power sector, plus power plant tracking, tenders
+    and contracts, renewable auctions, transmission and distribution projects, energy storage, smart grid
+    projects, and energy transition data.
+  representative_queries:
+  - upcoming power plant projects in Southeast Asia
+  - renewable energy auction results in Europe
+  - energy storage projects under construction globally
+  - transmission and distribution projects planned for next year
+- slug: retail
+  name: Retail
+  endpoint: https://mcp.globaldata.com/retail/mcp
+  description: Company, deal, filings, patent, and news intelligence for the retail sector, covering company
+    profiles, M&A activity, and industry news.
+  representative_queries:
+  - recent M&A deals among retail companies
+  - news on new retail store openings
+  - leading retail companies by revenue
+  - patents filed for retail technology
+- slug: sport
+  name: Sport
+  endpoint: https://mcp.globaldata.com/sport/mcp
+  description: Sport industry intelligence covering athletes, sponsorship brands, venues, competitions,
+    conferences, sponsorship and media-rights deals, media revenues, and stadium construction projects,
+    alongside company, deal, and news data.
+  representative_queries:
+  - which companies sponsor football clubs in Europe
+  - total media rights revenue for a major sports competition
+  - stadium construction projects underway worldwide
+  - sponsorship deals signed by a specific sports brand
+- slug: strategicintelligence
+  name: strategicintelligence
+  endpoint: https://mcp.globaldata.com/strategicintelligence/mcp
+  description: ''
+  representative_queries: []
+- slug: stylus
+  name: stylus
+  endpoint: https://mcp.globaldata.com/stylus/mcp
+  description: ''
+  representative_queries: []
+- slug: technology
+  name: Technology
+  endpoint: https://mcp.globaldata.com/technology/mcp
+  description: Company, deal, patent, and news intelligence for the technology sector, plus ICT contracts,
+    ICT client prospecting, and technology partner network data.
+  representative_queries:
+  - biggest technology M&A deals this quarter
+  - ICT contracts signed by government agencies
+  - patents filed by leading semiconductor companies
+  - which companies are in a vendor's partner network
+- slug: tourism
+  name: Tourism
+  endpoint: https://mcp.globaldata.com/tourism/mcp
+  description: Company, deal, and news intelligence for the tourism and hospitality sector, plus tourism
+    infrastructure project tracking.
+  representative_queries:
+  - major hotel and resort projects under construction
+  - recent deals among tourism companies
+  - news on new airline route launches
+  - tourism infrastructure projects planned in the Gulf
+server_count: 23
+verticals_note: The developer documentation lists 20 site slugs (consumer, retail, packaging, ads, financialservices,
+  technology, disruptor, mining, oilgas, power, construction, insurance, automotive, tourism, foodservice,
+  apparel, meedprojects, sport, explorer, agri). The AIR manifest at /.well-known/ai-catalog.json advertises
+  23 endpoints — the 20 above plus celentintelligence, strategicintelligence and stylus. The manifest
+  is the machine-readable source of truth and is what an agent would read.
+related_surfaces:
+  healthcare_pharma_mcp: The documentation references a separate "Healthcare Pharma MCP" for drug-level
+    patent expiry data, and GlobalData announced Healthcare MCP availability on 30 July 2026. No endpoint
+    for it is published in the AIR manifest or the developer reference, and no pharma/healthcare MCP host
+    resolved on probe. Recorded as named-but-undiscoverable.
+  ava_mcp: GlobalData announced Ava MCP (its AI research analyst, exposed via REST API or MCP) on 21 July
+    2026. No Ava endpoint is published. api.globaldata.com resolves to an AWS ELB that returned 503 on
+    every path at probe time.
+support:
+  technical: DDStechSupport@globaldata.com
+  access_requests: https://www.globaldata.com/contact-us/
+  verify_connection: Call list_domains; a clean domain list confirms auth, transport and progressive discovery
+    end to end.
+logging: Each MCP call is recorded against the caller credential for usage analytics and rate limiting.
+  GlobalData instructs callers not to pass PII in query strings.
+checked: '2026-09-13'

@@ -1,0 +1,85 @@
+generated: '2026-09-13'
+method: searched
+source: https://mcp.globaldata.com/ (Section 11, Tool updates & versioning)
+summary: >-
+  GlobalData publishes a real, explicit compatibility promise for its MCP tool surface and a runtime
+  signal for change — which is more than most providers with no OpenAPI manage. What it does NOT
+  publish is a dated changelog, a status page, an SLA, or Sunset/Deprecation response headers, so
+  an agent learns that something changed only by re-reading tools/list.
+versioning:
+  scheme: unversioned endpoint; change is expressed through tool names, not a version segment
+  endpoint_pattern: https://mcp.globaldata.com/{site}/mcp
+  version_in_path: false
+  version_header: none published
+  note: >-
+    There is no v1/v2 in the URL and no version negotiation documented. The gateway's contract is
+    whatever tools/list returns for the current session.
+compatibility_promise:
+  stated: true
+  text: >-
+    "Tool changes are additive and backward-compatible. Breaking changes ship as new tool names;
+    old names are deprecated with advance notice and a migration window before removal."
+  source: https://mcp.globaldata.com/ (Section 11)
+deprecation_policy:
+  published: true
+  mechanism: rename-and-migrate
+  detail: >-
+    A breaking change is shipped as a NEW tool name rather than as a change to an existing one. The
+    old name is deprecated with advance notice and a migration window before removal.
+  observed_examples:
+    - change: 'domain `leads` renamed to `buying_signals` (tool list_leads -> list_buying_signals)'
+      source: https://mcp.globaldata.com/ (Section 06 / Section 10)
+    - change: 'search facade parameter `query` renamed to `keywords`; `query` retained as a working legacy alias'
+      source: https://mcp.globaldata.com/ (Section 03)
+  rfc_8594_headers: false
+  sunset_header: not published
+  deprecation_header: not published
+  deprecation_notice_channel: >-
+    Not specified. GlobalData states advance notice is given but does not say where it is published
+    — there is no changelog page, mailing list or feed named in the documentation.
+  gap: >-
+    The policy is real but unaddressable by a machine. An agent cannot poll for a deprecation
+    notice; it can only observe that a tool name stopped appearing in tools/list.
+change_notification:
+  runtime_signal: notifications/tools/list_changed
+  emitted_when: the tool set changes, and on discover_capabilities / reveal_advanced
+  client_behaviour: >-
+    Compliant MCP clients re-fetch the tool list automatically without reconnecting. Claude Desktop
+    requires a full app restart; claude.ai needs the connector toggled off and on; Copilot Studio
+    needs the MCP tool re-synced and the agent republished; OpenAI Responses API fetches per run.
+  fresh_sessions: every initialize / tools/list returns the latest definitions — no cross-session schema caching
+  source: https://mcp.globaldata.com/ (Section 11)
+changelog:
+  published: false
+  note: >-
+    No dated changelog exists. Section 11 describes HOW change is handled, not WHAT changed. The
+    only dated change markers discoverable anywhere are the two renames recorded above and a
+    July 2026 note in Section 08 about AI-assisted fuzzy matching being added to fixed-choice field
+    resolution. No changelog/ artifact is written and NO ChangeLog pointer is emitted.
+status_page:
+  published: false
+  probes:
+    - {url: 'https://status.globaldata.com/', result: DNS did not resolve, checked: '2026-09-13'}
+    - {url: 'https://mcp.globaldata.com/health', status: 200, body: Healthy, checked: '2026-09-13'}
+  note: >-
+    There is a liveness endpoint (/health returns the literal string "Healthy") but that is a probe
+    target, not a status page — it carries no incident history, no component breakdown, and no
+    subscription channel. NO StatusPage pointer is emitted: a health check is not a status page and
+    treating one as the other would credit GlobalData with an operational surface it does not run.
+sla:
+  published: false
+  note: No service-level agreement, uptime target, or support-response commitment is published publicly.
+data_freshness:
+  published: true
+  source: https://mcp.globaldata.com/ (Section 12)
+  detail:
+    - {domain: company financials and news, freshness: typically updated within ~2 business days of release}
+    - {domain: jobs, freshness: near real-time}
+    - {domain: reports, freshness: depends on analyst publication schedules}
+  authoritative_timestamp: the publication date field in each result record
+deprecated_operations:
+  count: 0
+  note: >-
+    Cannot be derived — there is no OpenAPI, and the live tools/list requires authentication. The
+    two renames above are the only deprecations GlobalData's documentation discloses.
+checked: '2026-09-13'

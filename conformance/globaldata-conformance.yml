@@ -1,0 +1,166 @@
+generated: '2026-09-13'
+method: probed
+source: >-
+  Live probes of https://mcp.globaldata.com/ discovery documents plus GlobalData's published MCP
+  developer reference at https://mcp.globaldata.com/
+summary: >-
+  GlobalData conforms to the agent-protocol stack — MCP over Streamable HTTP, OAuth 2.1 with PKCE,
+  RFC 8414 and RFC 9728 discovery, and the Agentic Resource Discovery (AIR) manifest — and to
+  nothing else. It publishes no OpenAPI, no OpenID Connect discovery document, no RFC 9457 problem
+  details, and no domain data standard. That last absence is a finding, not a failing: GlobalData
+  sells a proprietary research taxonomy, and its market has no adopted interchange standard to
+  conform to.
+conformance:
+  - id: mcp
+    name: Model Context Protocol
+    conforms: true
+    evidence: >-
+      https://mcp.globaldata.com/{site}/mcp accepts JSON-RPC 2.0 over Streamable HTTP; an anonymous
+      tools/list POST returns a structured 401 rather than a transport error, and the documentation
+      specifies the Accept: application/json, text/event-stream contract, initialize handshake,
+      tools/list, and notifications/tools/list_changed.
+    method: probed
+    http_status: 401
+    checked: '2026-09-13'
+  - id: oauth2.1
+    name: OAuth 2.1 Authorization Code with PKCE
+    conforms: true
+    evidence: >-
+      https://mcp.globaldata.com/.well-known/oauth-authorization-server (HTTP 200) declares
+      response_types_supported [code], grant_types_supported [authorization_code, refresh_token,
+      client_credentials] and code_challenge_methods_supported [S256]. PKCE-only code flow with no
+      implicit grant is the OAuth 2.1 shape.
+    method: probed
+    http_status: 200
+    checked: '2026-09-13'
+  - id: rfc8414
+    name: 'RFC 8414 — OAuth 2.0 Authorization Server Metadata'
+    conforms: true
+    evidence: https://mcp.globaldata.com/.well-known/oauth-authorization-server returns 200 with issuer, authorization_endpoint, token_endpoint and jwks_uri.
+    method: probed
+    http_status: 200
+    checked: '2026-09-13'
+  - id: rfc9728
+    name: 'RFC 9728 — OAuth 2.0 Protected Resource Metadata'
+    conforms: true
+    evidence: >-
+      https://mcp.globaldata.com/.well-known/oauth-protected-resource returns 200 with resource and
+      authorization_servers, AND the 401 challenge carries
+      WWW-Authenticate: Bearer realm="GlobalData MCP",
+      resource_metadata="https://mcp.globaldata.com/.well-known/oauth-protected-resource/mcp" —
+      the discovery linkage the RFC exists to provide.
+    method: probed
+    http_status: 200
+    checked: '2026-09-13'
+  - id: air
+    name: 'Agentic Resource Discovery (AIR) manifest 1.0'
+    conforms: true
+    evidence: >-
+      https://mcp.globaldata.com/.well-known/ai-catalog.json returns 200 with specVersion "1.0",
+      a host block identified as did:web:mcp.globaldata.com, and 23 entries of type
+      application/mcp-server+json each carrying url, capabilities and representativeQueries.
+    method: probed
+    http_status: 200
+    checked: '2026-09-13'
+  - id: did-web
+    name: 'did:web identifier'
+    conforms: true
+    evidence: The AIR manifest identifies its host as did:web:mcp.globaldata.com.
+    method: probed
+    checked: '2026-09-13'
+    note: >-
+      The identifier is asserted in the manifest. The corresponding DID document at
+      /.well-known/did.json was not probed as a separate document in this round.
+  - id: jsonrpc2
+    name: JSON-RPC 2.0
+    conforms: true
+    evidence: The documented request envelope is {"jsonrpc":"2.0","id":1,"method":"tools/list"}.
+    method: searched
+    checked: '2026-09-13'
+  - id: pagination
+    name: Documented pagination contract
+    conforms: true
+    evidence: >-
+      Section 08 of https://mcp.globaldata.com/ specifies a pagination block with page, page_size,
+      returned, total_records, total_pages, has_more and next_page.example_args.
+    method: searched
+    checked: '2026-09-13'
+  - id: openapi
+    name: OpenAPI
+    conforms: false
+    evidence: >-
+      No OpenAPI is published. Probed /openapi.json, /swagger.json, /v1/openapi.json, /api-docs,
+      /docs on mcp.globaldata.com (401 catch-all), www.globaldata.com (404) and api.globaldata.com
+      (503 on every path). None returned a parseable specification.
+    method: probed
+    checked: '2026-09-13'
+  - id: oidc
+    name: OpenID Connect Discovery
+    conforms: false
+    evidence: >-
+      /.well-known/openid-configuration returns 401 on mcp.globaldata.com and 302 to an error page
+      on login.globaldata.com, despite the openid scope being advertised in scopes_supported and an
+      ID token being described in the credentials flow.
+    method: probed
+    checked: '2026-09-13'
+    note: >-
+      A real gap: GlobalData issues OIDC tokens but publishes no OIDC discovery document, so a
+      client cannot auto-configure ID token validation.
+  - id: rfc9457
+    name: 'RFC 9457 — Problem Details for HTTP APIs'
+    conforms: false
+    evidence: >-
+      The observed error body is a bare {"error":"Unauthorized: token required"} with content-type
+      application/json, not application/problem+json.
+    method: probed
+    http_status: 401
+    checked: '2026-09-13'
+  - id: rfc9116
+    name: 'RFC 9116 — security.txt'
+    conforms: false
+    evidence: >-
+      /.well-known/security.txt returns 404 on www.globaldata.com and login.globaldata.com, 401 on
+      mcp.globaldata.com (its catch-all), 301 on the apex, and 503 on api.globaldata.com.
+    method: probed
+    checked: '2026-09-13'
+  - id: rfc8594
+    name: 'RFC 8594 — Sunset HTTP Header'
+    conforms: false
+    evidence: >-
+      GlobalData publishes a rename-and-migrate deprecation policy in prose (Section 11) but no
+      Sunset or Deprecation response headers.
+    method: searched
+    checked: '2026-09-13'
+  - id: a2a
+    name: 'A2A Agent Card'
+    conforms: false
+    evidence: >-
+      /.well-known/agent-card.json and /.well-known/agent.json return 401 (catch-all) on
+      mcp.globaldata.com, 404 on www.globaldata.com and login.globaldata.com, 301 on the apex, 302
+      on explorer.globaldata.com and 503 on api.globaldata.com. No card exists on any host.
+    method: probed
+    checked: '2026-09-13'
+domain_standard:
+  applicable: false
+  standard: null
+  note: >-
+    REWARD-ONLY check, deliberately left empty. GlobalData's market — proprietary multi-sector
+    business and market intelligence — has no adopted interchange standard for the thing it sells.
+    Its taxonomy (industry, theme, deal type, commodity, mine stage, sentiment) is GlobalData's own
+    canonical vocabulary, resolved through its own resolve_entities tool, and that is the product.
+    Nothing in the contract declares SCIM, OData, OpenRTB, Sparkplug, ActivityPub, LTI/OneRoster,
+    OAI-PMH, ORCID/DataCite/Crossref, HL7v2/X12/EDIFACT or ISO 20022. Recorded as not-applicable
+    rather than not-conformant; inventing a conformance to fill the slot would be fabrication.
+  adjacent_observation: >-
+    The patents domain does expose IPC classification codes as a first-class filter (list_patents
+    takes an ipcCode such as H01M), which is a WIPO standard identifier scheme used as a filter
+    value. That is standard-aware data, not a standard-conformant contract, so it is not claimed
+    as domain_standard_conformance.
+compliance_published: false
+compliance_note: >-
+  No certifications, audit reports or compliance program are published on any GlobalData surface
+  reachable in this pass. www.globaldata.com/security/ resolves to a tag/search listing, and
+  www.globaldata.com/trust/ resolves to a 2018 press release about TRUSTECH — neither is a security
+  policy or a trust center. probe-security-programs.py returned vdp=none trust=none. NO Compliance
+  and NO TrustCenter pointer is emitted.
+checked: '2026-09-13'

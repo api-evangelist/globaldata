@@ -1,0 +1,114 @@
+generated: '2026-09-13'
+method: searched
+source: >-
+  https://mcp.globaldata.com/ (Section 04, Authentication) and the probed RFC 8414 document at
+  https://mcp.globaldata.com/.well-known/oauth-authorization-server
+summary: >-
+  One authentication model across the whole published surface: OAuth 2.1 against GlobalData SSO.
+  There are no API keys, no basic auth, and no unauthenticated read path — every MCP endpoint
+  returns HTTP 401 with a WWW-Authenticate Bearer challenge until a token is presented. What a
+  token can actually see is decided by subscription entitlement, not by scope.
+derivation_note: >-
+  NOT derived from an OpenAPI securitySchemes block — no OpenAPI exists for this provider. Every
+  field below was read either from GlobalData's own developer documentation or from a discovery
+  document that was fetched and parsed.
+schemes:
+  - id: oauth2_authorization_code_pkce
+    type: oauth2
+    flow: authorization_code
+    pkce: required
+    code_challenge_methods: [S256]
+    authorization_server: https://login.globaldata.com
+    token_endpoint: https://login.globaldata.com/oauth/token
+    audience: >-
+      Interactive MCP clients — claude.ai custom connectors, Microsoft Copilot Studio, browser-based
+      agents. The user signs in through a browser window; no client secret is held by the agent.
+    client_registration: >-
+      Not dynamic. GlobalData requires the redirect URI to be registered with its Direct Data
+      Solutions (DDS) team before first use.
+    source: https://mcp.globaldata.com/
+  - id: oauth2_password
+    type: oauth2
+    flow: password
+    label: Credentials grant
+    token_endpoint: https://login.globaldata.com/oauth/token
+    request_content_type: application/x-www-form-urlencoded
+    parameters: [grant_type, username, password, scope]
+    scopes_requested: [openid, profile, email, offline_access]
+    token_type: Bearer
+    expires_in: 3600
+    audience: back-end agents, scripts, server-to-server automation
+    note: >-
+      Exchanges a GlobalData username and password directly for a bearer token. Documented by
+      GlobalData for non-interactive agents.
+    source: https://mcp.globaldata.com/
+  - id: oauth2_client_credentials
+    type: oauth2
+    flow: client_credentials
+    declared_in: https://mcp.globaldata.com/.well-known/oauth-authorization-server
+    note: >-
+      Listed in grant_types_supported of the gateway's own RFC 8414 metadata. Not written up in the
+      prose documentation, so recorded as declared-by-the-server rather than documented-for-callers.
+    source: https://mcp.globaldata.com/.well-known/oauth-authorization-server
+token_presentation:
+  header: Authorization
+  format: 'Bearer <access_token>'
+  applies_to: every request to https://mcp.globaldata.com/{site}/mcp
+challenge:
+  observed_status: 401
+  observed_body: '{"error":"Unauthorized: token required"}'
+  www_authenticate: >-
+    Bearer realm="GlobalData MCP",
+    resource_metadata="https://mcp.globaldata.com/.well-known/oauth-protected-resource/mcp"
+  note: >-
+    RFC 9728-conformant challenge — the 401 names the protected-resource metadata document, which
+    is the behaviour an MCP client needs to discover the authorization server automatically.
+  checked: '2026-09-13'
+identity_providers:
+  source: https://mcp.globaldata.com/ (Section 04)
+  options:
+    - GlobalData username and password
+    - Microsoft Entra ID
+    - Google Workspace
+    - Okta / enterprise SSO
+server_metadata:
+  rfc_8414:
+    url: https://mcp.globaldata.com/.well-known/oauth-authorization-server
+    status: 200
+    issuer: https://mcp.globaldata.com
+    authorization_endpoint: https://mcp.globaldata.com/authorize
+    token_endpoint: https://mcp.globaldata.com/token
+    jwks_uri: https://mcp.globaldata.com/.well-known/jwks.json
+    response_types_supported: [code]
+    grant_types_supported: [authorization_code, refresh_token, client_credentials]
+    code_challenge_methods_supported: [S256]
+    token_endpoint_auth_methods_supported: [none, client_secret_post, private_key_jwt]
+    token_endpoint_auth_signing_alg_values_supported: [RS256, PS256, ES256]
+    scopes_supported: [openid, profile, email, offline_access]
+    file: ../well-known/globaldata-mcp-oauth-authorization-server.json
+  rfc_9728:
+    url: https://mcp.globaldata.com/.well-known/oauth-protected-resource
+    status: 200
+    resource: https://mcp.globaldata.com
+    authorization_servers: [https://mcp.globaldata.com]
+    file: ../well-known/globaldata-mcp-oauth-protected-resource.json
+  discrepancy_note: >-
+    The gateway's RFC 8414 document names ITSELF as issuer with /authorize and /token on
+    mcp.globaldata.com, while the prose documentation tells callers to use login.globaldata.com.
+    Both are real: the gateway proxies or fronts GlobalData SSO. login.globaldata.com publishes no
+    RFC 8414 document of its own (its /.well-known/oauth-authorization-server 302s to an error
+    page), so the mcp.globaldata.com copy is the only machine-readable server metadata GlobalData
+    publishes. A client following the RFC 9728 challenge lands on the working one.
+authorization_model:
+  mechanism: subscription entitlement, evaluated server-side per credential
+  note: >-
+    Scopes are OIDC identity scopes only. Access to data is decided by what the caller's GlobalData
+    subscription includes: a vertical the subscription does not cover cannot be connected to, and a
+    domain it does not include will not reveal — discover_capabilities / reveal_advanced return a
+    not_entitled response rather than pretending to reveal it. Several domains carry their own
+    entitlement (contacts, market_data, fdi_projects, ict_contracts).
+  source: https://mcp.globaldata.com/ (Sections 03, 12)
+no_api_keys: >-
+  GlobalData publishes no API-key scheme for this surface. There is no key prefix, no key
+  management page, and no anonymous tier.
+checked: '2026-09-13'

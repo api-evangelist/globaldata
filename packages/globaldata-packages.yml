@@ -1,0 +1,62 @@
+generated: '2026-09-13'
+method: searched
+source: >-
+  npm registry (registry.npmjs.org), PyPI (pypi.org/pypi/<name>/json), GitHub, and GlobalData's own
+  MCP developer documentation at https://mcp.globaldata.com/
+summary: >-
+  GlobalData publishes NO first-party client library on any registry. The npm and PyPI names that
+  match "globaldata" are both unrelated third-party packages and are recorded here only so a later
+  round does not mistake them for GlobalData SDKs. The only client-side install GlobalData's own
+  documentation asks for is `npx -y mcp-remote <endpoint>` — mcp-remote is a generic, third-party
+  MCP stdio-to-HTTP bridge, not a GlobalData package, so it is recorded as third-party too.
+official_package_count: 0
+packages: []
+rejected:
+  - name: globaldata
+    registry: npm
+    url: https://registry.npmjs.org/globaldata
+    official: false
+    version: 0.0.1
+    published: null
+    reason: >-
+      Unrelated name squat. Description "Example of a TypeScript-based package", sole maintainer
+      jdelvalle <jdelvalle@greenbyte.es>, no repository, no homepage. Nothing connects it to
+      GlobalData Plc. `published` is null because the registry metadata for this stub carries no
+      usable release date to read.
+    checked: '2026-09-13'
+  - name: GlobalData
+    registry: pypi
+    url: https://pypi.org/pypi/globaldata/json
+    official: false
+    version: '0.92'
+    published: null
+    reason: >-
+      Unrelated third-party library — "Easy multiprocessing with GlobalData", author Tami Bar,
+      homepage github.com/fire17/GlobalData. A Python multiprocessing helper, not a client for
+      GlobalData Plc. `published` is null because the PyPI info block for this release exposes no
+      upload date at the info level; it was not read from a release file.
+    checked: '2026-09-13'
+  - name: mcp-remote
+    registry: npm
+    official: false
+    version: null
+    published: null
+    reason: >-
+      Named in GlobalData's own Claude Desktop connection example
+      (`npx -y mcp-remote https://mcp.globaldata.com/{site}/mcp`) but authored and published by a
+      third party, not GlobalData. It is a generic bridge that fronts ANY remote MCP server. The
+      invocation in the docs is unpinned (`-y` with no version), so a consumer cannot tell which
+      version they get either — recorded as version null for that reason, not because the registry
+      was unreachable.
+    checked: '2026-09-13'
+registries_checked:
+  - {registry: npm, result: no first-party package}
+  - {registry: pypi, result: no first-party package}
+  - {registry: github, result: 'github.com/globaldata is an empty org (no public repos, no public members, no bio or website); affiliation with GlobalData Plc unproven, so no GitHubOrganization pointer emitted'}
+  - {registry: 'maven / nuget / crates.io / rubygems / packagist / pkg.go.dev', result: not probed — no evidence in any GlobalData surface points at a package on these}
+sdk_note: >-
+  GlobalData's integration story is deliberately not an SDK story. Its documentation targets MCP
+  clients (Claude Desktop, claude.ai connectors, OpenAI Responses API, Microsoft Copilot Studio)
+  and raw JSON-RPC over cURL. There is nothing to wrap, because the transport IS the client
+  contract. NO SDKs pointer is emitted — sdk_count is genuinely 0.
+checked: '2026-09-13'

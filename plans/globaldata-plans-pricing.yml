@@ -1,0 +1,52 @@
+generated: '2026-09-13'
+method: searched
+source: >-
+  https://www.globaldata.com/solutions/api-data-feeds/, https://www.globaldata.com/marketplace/,
+  https://mcp.globaldata.com/ (Section 13, Access & support)
+summary: >-
+  GlobalData publishes NO pricing, tiers, quotas or overage terms for its MCP / Direct Data
+  Solutions surface. Access is enterprise-only and sales-gated: the documentation's own instruction
+  is to request credentials by contacting the Direct Data Solutions team, and existing clients
+  request new datasets through an account manager.
+plan_count: 0
+plans: []
+pricing_model: enterprise contract, subscription entitlement per vertical and per domain
+access_path:
+  - {step: 1, action: 'Contact GlobalData via https://www.globaldata.com/contact-us/ or a DDS account manager'}
+  - {step: 2, action: 'State client type (Claude Desktop, claude.ai, OpenAI, Copilot Studio, custom), the vertical(s) needed, and the preferred auth flow'}
+  - {step: 3, action: 'GlobalData issues credentials and, for OAuth clients, registers the redirect URI'}
+entitlement_units:
+  units:
+    - vertical (site slug) — a subscription covers specific Intelligence Centers, not the whole gateway
+    - domain — several domains carry their own entitlement on top of the vertical
+  separately_entitled_domains: [contacts, market_data, fdi_projects, ict_contracts]
+  note: >-
+    Reports availability also varies by subscription tier, per GlobalData's own methodology table.
+    None of these tiers is named or priced publicly.
+probes:
+  - url: https://www.globaldata.com/solutions/api-data-feeds/
+    status: 200
+    finding: >-
+      Lists six delivery methods (MCP General Access, Advanced MCP, REST API, CRM integration,
+      Snowflake share, cloud data warehouse) and routes every one of them to a contact or demo form.
+      No price, no tier, no quota.
+    checked: '2026-09-13'
+  - url: https://www.globaldata.com/marketplace/
+    status: 200
+    finding: >-
+      A WooCommerce-backed catalog of individual data products across industries. Prices are
+      rendered client-side and are NOT present in the served HTML, so no price could be read and
+      none is recorded here. In any case this prices individual datasets and reports, not API or
+      MCP access, so NO Pricing pointer is emitted against it.
+    checked: '2026-09-13'
+  - url: https://www.globaldata.com/pricing/
+    status: 200
+    finding: >-
+      NOT a pricing page despite the path. It resolves to a press release titled "Pricing and
+      reimbursement delays critical headwind for biopharmaceutical industry innovation". Recorded
+      explicitly so a later round does not wire it as a Pricing pointer on the strength of its URL.
+    checked: '2026-09-13'
+quotas: not published
+overage: not published
+free_tier: none — there is no anonymous or self-service tier; every endpoint returns 401 without a token
+checked: '2026-09-13'

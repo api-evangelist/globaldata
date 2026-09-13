@@ -1,0 +1,133 @@
+generated: '2026-09-13'
+method: probed
+source: live probes of /.well-known/ on every GlobalData host the record knows
+summary: >-
+  Three real documents are served, all on the MCP gateway host mcp.globaldata.com: RFC 8414
+  OAuth 2.1 authorization-server metadata, RFC 9728 protected-resource metadata, and an
+  Agentic Resource Discovery (AIR) manifest at /.well-known/ai-catalog.json listing all 23
+  vertical MCP server endpoints. That is a genuine WellKnown hit and the pointer is earned.
+  Nothing is served on the marketing site, the SSO host, or the (currently 503) API host:
+  no security.txt anywhere (so NO SecurityTxt pointer), no api-catalog, no ai-plugin.json,
+  no OIDC discovery document, and no A2A agent card on any host.
+pointer_basis: >-
+  WellKnown pointer emitted on the strength of the three 200s on mcp.globaldata.com, each of
+  which returned a parsed JSON document. SecurityTxt pointer NOT emitted — RFC 9116 is
+  unimplemented on every host probed. AgentCard pointer NOT emitted — no agent card exists.
+false_positive_watch: >-
+  mcp.globaldata.com answers HTTP 401 with the JSON body {"error":"Unauthorized: token required"}
+  for every path it does not explicitly publish anonymously, including /robots.txt. A 401 on that
+  host is the catch-all, NOT evidence of a gated document. api.globaldata.com is an AWS ELB that
+  returned 503 on every path at probe time — recorded as unreachable, not as absent.
+  globaldata.com (apex) 301s to www; explorer./login.globaldata.com 302 to an error page.
+hosts:
+  - host: https://mcp.globaldata.com
+    note: MCP gateway — the only host serving real discovery documents
+    documents:
+      - path: /.well-known/oauth-authorization-server   # RFC 8414
+        status: 200
+        type: application/json
+        file: globaldata-mcp-oauth-authorization-server.json
+      - path: /.well-known/oauth-protected-resource     # RFC 9728
+        status: 200
+        type: application/json
+        file: globaldata-mcp-oauth-protected-resource.json
+      - path: /.well-known/ai-catalog.json              # Agentic Resource Discovery (AIR) 1.0
+        status: 200
+        type: application/json
+        file: globaldata-ai-catalog.json
+      - path: /.well-known/security.txt
+        status: 401
+        note: catch-all JSON 401, not a gated document
+      - path: /.well-known/openid-configuration
+        status: 401
+      - path: /.well-known/api-catalog
+        status: 401
+      - path: /.well-known/ai-plugin.json
+        status: 401
+      - path: /.well-known/agent-card.json
+        status: 401
+      - path: /.well-known/agent.json
+        status: 401
+  - host: https://www.globaldata.com
+    note: corporate marketing site (WordPress); real 404s with an HTML body
+    documents:
+      - path: /.well-known/security.txt
+        status: 404
+      - path: /.well-known/openid-configuration
+        status: 404
+      - path: /.well-known/oauth-authorization-server
+        status: 404
+      - path: /.well-known/oauth-protected-resource
+        status: 404
+      - path: /.well-known/api-catalog
+        status: 404
+      - path: /.well-known/ai-plugin.json
+        status: 404
+      - path: /.well-known/ai-catalog.json
+        status: 404
+      - path: /.well-known/agent-card.json
+        status: 404
+      - path: /.well-known/agent.json
+        status: 404
+  - host: https://globaldata.com
+    note: apex 301s to www for every path
+    documents:
+      - path: /.well-known/security.txt
+        status: 301
+      - path: /.well-known/api-catalog
+        status: 301
+      - path: /.well-known/agent-card.json
+        status: 301
+      - path: /.well-known/agent.json
+        status: 301
+  - host: https://login.globaldata.com
+    note: >-
+      GlobalData SSO / OAuth 2.1 authorization server named in the MCP developer docs as the
+      token endpoint host. Its own RFC 8414 metadata path 302s to /Error/NotFound, so the only
+      published server metadata is the copy on mcp.globaldata.com.
+    documents:
+      - path: /.well-known/oauth-authorization-server
+        status: 302
+      - path: /.well-known/openid-configuration
+        status: 302
+      - path: /.well-known/oauth-protected-resource
+        status: 302
+      - path: /.well-known/api-catalog
+        status: 302
+      - path: /.well-known/security.txt
+        status: 404
+      - path: /.well-known/ai-plugin.json
+        status: 404
+      - path: /.well-known/agent-card.json
+        status: 404
+      - path: /.well-known/agent.json
+        status: 404
+  - host: https://api.globaldata.com
+    note: >-
+      Resolves to an AWS ELB but returned 503 Service Temporarily Unavailable on every path at
+      probe time, root included. Unreachable, not absent — re-probe on a later round.
+    documents:
+      - path: /.well-known/security.txt
+        status: 503
+      - path: /.well-known/oauth-authorization-server
+        status: 503
+      - path: /.well-known/api-catalog
+        status: 503
+      - path: /.well-known/agent-card.json
+        status: 503
+      - path: /.well-known/agent.json
+        status: 503
+  - host: https://explorer.globaldata.com
+    note: GlobalData Explorer application host; 302s to an error page for every /.well-known/ path
+    documents:
+      - path: /.well-known/security.txt
+        status: 302
+      - path: /.well-known/oauth-authorization-server
+        status: 302
+      - path: /.well-known/api-catalog
+        status: 302
+      - path: /.well-known/agent-card.json
+        status: 302
+      - path: /.well-known/agent.json
+        status: 302
+checked: '2026-09-13'

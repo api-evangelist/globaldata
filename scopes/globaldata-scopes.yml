@@ -1,0 +1,37 @@
+generated: '2026-09-13'
+method: probed
+source: https://mcp.globaldata.com/.well-known/oauth-authorization-server
+docs: https://mcp.globaldata.com/
+summary: >-
+  The four scopes GlobalData's OAuth 2.1 server advertises are OIDC identity scopes, nothing more.
+  They govern what claims a token carries and whether a refresh token is issued — they do NOT
+  express data permissions. What a caller can read is decided by subscription entitlement,
+  evaluated server-side per credential, and GlobalData publishes no scope names for it.
+derivation_note: >-
+  NOT derived from an OpenAPI oauth2 securityScheme — no OpenAPI exists for this provider. The list
+  below was read directly from the scopes_supported array of the fetched RFC 8414 document, and the
+  request-time scope string was read from GlobalData's own credentials-grant example.
+scopes:
+  - name: openid
+    description: OIDC — requests an ID token identifying the signed-in GlobalData user.
+    standard: true
+  - name: profile
+    description: OIDC — standard profile claims for the signed-in user.
+    standard: true
+  - name: email
+    description: OIDC — email claim for the signed-in user.
+    standard: true
+  - name: offline_access
+    description: OIDC — requests a refresh token so a long-running agent can renew without re-auth.
+    standard: true
+scope_count: 4
+requested_in_docs: 'openid profile email offline_access'
+data_permission_model:
+  expressed_as_scopes: false
+  mechanism: subscription entitlement
+  note: >-
+    A domain outside the caller's subscription returns not_entitled from discover_capabilities /
+    reveal_advanced. contacts, market_data, fdi_projects and ict_contracts each carry a separate
+    entitlement. None of these is addressable as an OAuth scope, so an agent cannot request or
+    inspect its own data permissions ahead of a call — it discovers them by calling list_domains.
+checked: '2026-09-13'

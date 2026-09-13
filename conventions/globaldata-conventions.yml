@@ -1,0 +1,139 @@
+generated: '2026-09-13'
+method: searched
+source: https://mcp.globaldata.com/ (Sections 02, 03, 08, 11, 12)
+summary: >-
+  GlobalData's cross-cutting semantics are unusually well specified for a provider with no OpenAPI,
+  because the MCP gateway documents its response envelope, its entity-resolution contract and its
+  pagination contract explicitly. The surface is READ-ONLY: every documented tool is a list_*,
+  get_* or search call. That single fact settles idempotency, reversibility and dry-run for this
+  provider — there is nothing to replay, undo or rehearse.
+surface_shape:
+  protocol: Model Context Protocol over Streamable HTTP
+  rpc: JSON-RPC 2.0
+  endpoint_pattern: https://mcp.globaldata.com/{site}/mcp
+  rest: none — GlobalData publishes no REST contract for this surface
+  write_operations: 0
+  read_only: true
+auth_style:
+  summary: OAuth 2.1 bearer token via GlobalData SSO on every request; no anonymous path.
+  detail: authentication/globaldata-authentication.yml
+idempotency:
+  coverage: na
+  read_only: true
+  mechanism: none
+  header: null
+  note: >-
+    NOT "none because the provider forgot" — none because there is no mutating surface to protect.
+    Every tool GlobalData documents reads data (list_companies, list_deals, get_filing_document,
+    search, resolve_entities, the get_*_analytics family). A retried call returns the same data;
+    there is no state an agent can double-create. Recorded as `na` so it leaves the denominator
+    rather than scoring as a missing safeguard. NO Idempotency pointer is emitted in apis.yml: the
+    provider implements no replay-protection mechanism and claiming one would be false.
+  reassess_if: >-
+    GlobalData ships a write tool (a saved search, an alert subscription, a report order). At that
+    point this becomes a real gap and coverage must change to none until a mechanism is documented.
+reversibility:
+  grade: na
+  read_only: true
+  note: >-
+    No write surface, so no reversal path is possible or needed. An agent calling this provider
+    cannot take an action that requires taking back.
+dry_run_mode:
+  supported: na
+  read_only: true
+  note: >-
+    Not applicable for the same reason. GlobalData does, however, ship the nearest read-side
+    equivalent: get_capabilities returns the full domain and tool catalog WITHOUT revealing or
+    enabling anything, and tool_search finds tools without unlocking them — both let an agent plan
+    a call sequence before committing to one.
+pagination:
+  style: page-number
+  request_params: [page_number, page_size]
+  response_block: pagination
+  response_fields: [page, page_size, returned, total_records, total_pages, has_more, next_page.example_args]
+  agent_affordance: >-
+    Notably strong: when has_more is set, the response carries next_page.example_args — a ready-made
+    argument object for the next call, so an agent paginates by copying a field rather than by
+    constructing one. This is the kind of self-describing continuation most providers make an agent
+    infer.
+  source: https://mcp.globaldata.com/ (Sections 08, 12)
+filtering:
+  resolution_required: >-
+    Taxonomy-valued filters (industry, location, theme, hqCountry, dealType, dealStatus,
+    dealRationale, acquirerCountry, newsCategory, sentiment, commodity, mineMethod, mineStage) must
+    be passed through resolve_entities first so they match GlobalData's canonical catalog.
+  free_text_passthrough: [companyName, keyword, job title]
+  confidence_threshold: 0.65
+  below_threshold_behaviour: filter is dropped and reported in dropped_filters
+  selective_filter_required: >-
+    A query with no selective filter is rejected BEFORE execution with a result_set_too_large error
+    that lists the filters which would make it valid. A bare geography with nothing else is
+    rejected. This is a pre-flight guard, not a rate limit.
+  source: https://mcp.globaldata.com/ (Sections 03, 08)
+response_envelope:
+  shape: >-
+    Every tool response wraps its payload in an envelope that states what was actually run and what
+    scope was actually applied — the closest thing this provider has to an error/warning contract.
+  fields:
+    - {name: result, meaning: the data payload}
+    - {name: delegated_tool, meaning: which tool the search facade actually ran}
+    - {name: route, meaning: why that tool was chosen}
+    - {name: applied_filters, meaning: the true scope after canonicalisation}
+    - {name: resolved, meaning: each input term, its canonical value, and a 0-1 confidence score}
+    - {name: dropped_filters, meaning: filters that could not be honored}
+    - {name: warnings, meaning: anything silently lost}
+    - {name: scope_warning, meaning: raised when a primary filter could not apply and scope degraded}
+    - {name: pagination, meaning: continuation state}
+    - {name: routing_hint, meaning: sibling tools to try when routing was ambiguous}
+    - {name: no_results_hint, meaning: sibling tools to try when results are empty}
+    - {name: unknown_fields, meaning: fields passed to fields= that did not match}
+  agent_rule_from_docs: >-
+    GlobalData instructs callers to present resolution BEFORE data, and warns that counts are
+    meaningless until applied_filters has been verified. A wrong resolution silently rescopes
+    everything downstream.
+composition:
+  join_key: company_id
+  note: >-
+    Company ID, returned by list_companies and by resolve_entities, is the primary join key across
+    every content domain — pass it forward to retrieve deals, news, filings, jobs or patents for
+    that company. A second identifier, cdms_company_id, is returned alongside it and is used only
+    by the handful of tools that ask for it by name.
+capability_discovery:
+  model: progressive
+  note: >-
+    Tools are not all visible at connect time. Seven gateway tools are always on; a domain's
+    standard tools appear after discover_capabilities('<domain>') and its analytics tools after
+    reveal_advanced('<domain>'). Both emit notifications/tools/list_changed.
+  documented_hazard: >-
+    GlobalData's own docs flag that a freshly revealed tool may not be callable by name until the
+    client re-fetches tools/list, and recommend search(domain, keywords) immediately after a reveal
+    because the facade does not depend on the client's local tool list.
+  entitlement_interaction: >-
+    Visibility is driven primarily by subscription entitlement; an unentitled domain returns
+    not_entitled instead of pretending to reveal.
+versioning:
+  scheme: unversioned endpoint; versioning expressed through tool names
+  promise: >-
+    Tool changes are additive and backward-compatible. Breaking changes ship as NEW tool names; old
+    names are deprecated with advance notice and a migration window before removal.
+  runtime_signal: notifications/tools/list_changed
+  detail: lifecycle/globaldata-lifecycle.yml
+error_semantics:
+  format: not RFC 9457 — JSON-RPC 2.0 error objects plus documented in-envelope warning fields
+  observed_transport_error: '{"error":"Unauthorized: token required"}' 
+  named_conditions:
+    - {condition: result_set_too_large, meaning: pre-flight rejection; no selective filter was supplied}
+    - {condition: not_entitled, meaning: the caller's subscription does not include this domain}
+    - {condition: tool not found, meaning: the domain is revealed server-side but the client tool list has not refreshed}
+  note: >-
+    GlobalData publishes no enumerated error-code registry, so no errors/ artifact is written — the
+    three named conditions above are all its documentation states, and inventing a catalog around
+    them would be fabrication.
+rate_limit_signaling:
+  detail: rate-limits/globaldata-rate-limits.yml
+  summary: Logged and rate-limited per credential, but no numbers and no response headers published.
+privacy_rule_from_docs: >-
+  Every MCP call is recorded against the caller's credential for usage analytics and rate limiting,
+  and GlobalData explicitly instructs callers NOT to pass personally identifiable information in
+  query strings.
+checked: '2026-09-13'

@@ -1,20 +1,129 @@
 aid: globaldata
 name: GlobalData
-description: 'GlobalData is a company surfaced via the API Evangelist harvest backlog (source: absent-parent)
-  and added to the network as a stub for full-pipeline profiling.'
+description: >-
+  GlobalData Plc is a London-listed data, analytics and insights company (LSE: DATA) whose
+  Intelligence Center platform covers companies, deals, news, filings, patents, job postings,
+  research reports, projects and market data across 20+ industry verticals. Its machine-readable
+  surface is agent-native rather than REST-first: GlobalData operates a first-party Model Context
+  Protocol gateway at mcp.globaldata.com that exposes the estate as callable agent tools, one MCP
+  server endpoint per vertical, behind OAuth 2.1 via GlobalData SSO. The gateway publishes a full
+  developer reference at its host root, RFC 8414 and RFC 9728 OAuth metadata, and an Agentic
+  Resource Discovery (AIR) manifest at /.well-known/ai-catalog.json advertising all 23 vertical
+  endpoints. No OpenAPI, GraphQL SDL, AsyncAPI or SOAP contract is published anywhere.
+image: https://www.globaldata.com/wp-content/uploads/2025/12/cropped-cropped-gd_icon-192x192.png
 url: https://raw.githubusercontent.com/api-evangelist/globaldata/refs/heads/main/apis.yml
 x-type: company
 x-source: harvest:absent-parent
-x-tier: stub
-x-tier-reason: harvest
 specificationVersion: '0.20'
 created: '2026-09-13'
 modified: '2026-09-13'
 tags:
 - Company
-apis: []
+- Market Intelligence
+- Business Intelligence
+- Data
+- Analytics
+- Model Context Protocol
+- Agents
+- Company Data
+- Deals
+- News
+- Patents
+- Research
+- Financial Services
+- Energy
+- Mining
+apis:
+- name: GlobalData Intelligence Center MCP
+  description: >-
+    A governed Model Context Protocol gateway that turns GlobalData's business intelligence into
+    tools an AI agent can call directly. One MCP server endpoint per industry vertical, all sharing
+    a single tool interface over Streamable HTTP with JSON-RPC 2.0. Seven gateway tools are always
+    on (list_domains, search, resolve_entities, discover_capabilities, reveal_advanced,
+    get_capabilities, tool_search); domain tools for companies, deals, news, filings, patents, jobs,
+    reports, projects, contacts, market data and vertical-specific databases are revealed
+    progressively and filtered by subscription entitlement. Authentication is OAuth 2.1 via
+    GlobalData SSO at login.globaldata.com. The anonymous tools/list probe returns HTTP 401, so the
+    live input schemas require an authenticated session.
+  image: https://www.globaldata.com/wp-content/uploads/2025/12/cropped-cropped-gd_icon-192x192.png
+  humanURL: https://mcp.globaldata.com/
+  baseURL: https://mcp.globaldata.com/{site}/mcp
+  tags:
+  - Model Context Protocol
+  - Agents
+  - Market Intelligence
+  - Business Intelligence
+  properties:
+  - type: MCPServer
+    url: mcp/globaldata-mcp.yml
+  - type: Documentation
+    url: https://mcp.globaldata.com/
+  - type: APIReference
+    url: https://mcp.globaldata.com/
+  - type: Authentication
+    url: authentication/globaldata-authentication.yml
+  - type: OAuthScopes
+    url: scopes/globaldata-scopes.yml
+  - type: Conventions
+    url: conventions/globaldata-conventions.yml
+  - type: RateLimits
+    url: rate-limits/globaldata-rate-limits.yml
+  - type: Plans
+    url: plans/globaldata-plans-pricing.yml
+  - type: AgentSkill
+    url: skills/_index.yml
+common:
+- type: DeveloperPortal
+  url: https://mcp.globaldata.com/
+- type: Documentation
+  url: https://mcp.globaldata.com/
+- type: APIReference
+  url: https://mcp.globaldata.com/
+- type: Website
+  url: https://www.globaldata.com/
+- type: Support
+  url: https://www.globaldata.com/contact-us/
+- type: SignUp
+  url: https://login.globaldata.com/login/index
+- type: TermsOfService
+  url: https://www.globaldata.com/terms-conditions/
+- type: PrivacyPolicy
+  url: https://www.globaldata.com/privacy-policy/
+- type: Blog
+  url: https://www.globaldata.com/data-insights/
+- type: WellKnown
+  url: well-known/globaldata-well-known.yml
+- type: MCPServer
+  url: mcp/globaldata-mcp.yml
+- type: Authentication
+  url: authentication/globaldata-authentication.yml
+- type: OAuthScopes
+  url: scopes/globaldata-scopes.yml
+- type: Conformance
+  url: conformance/globaldata-conformance.yml
+- type: Conventions
+  url: conventions/globaldata-conventions.yml
+- type: Lifecycle
+  url: lifecycle/globaldata-lifecycle.yml
+- type: Packages
+  url: packages/globaldata-packages.yml
+- type: Plans
+  url: plans/globaldata-plans-pricing.yml
+- type: RateLimits
+  url: rate-limits/globaldata-rate-limits.yml
+- type: AgentSkill
+  url: skills/_index.yml
+- type: LLMsTxt
+  url: llms/globaldata-llms.txt
+- type: DomainSecurity
+  url: security/globaldata-domain-security.yml
 maintainers:
 - FN: Kin Lane
   email: kin@apievangelist.com
 - FN: APIs.json
   email: info@apis.io
+x-enrichment:
+  date: '2026-09-13'
+  status: enriched
+  artifacts_added: 22
+  pass: local-v3
