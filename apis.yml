@@ -23,6 +23,22 @@ tags:
 - Business Intelligence
 - Data
 - Analytics
+- MCP
+- Agents
+- Company Data
+- Deals
+- News
+- Patents
+- Research
+- Financial-Services
+- Energy
+- Mining
+tags_raw:
+- Company
+- Market Intelligence
+- Business Intelligence
+- Data
+- Analytics
 - Model Context Protocol
 - Agents
 - Company Data
@@ -49,6 +65,11 @@ apis:
   humanURL: https://mcp.globaldata.com/
   baseURL: https://mcp.globaldata.com/{site}/mcp
   tags:
+  - MCP
+  - Agents
+  - Market Intelligence
+  - Business Intelligence
+  tags_raw:
   - Model Context Protocol
   - Agents
   - Market Intelligence
