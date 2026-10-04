@@ -30,7 +30,7 @@ tags:
 - News
 - Patents
 - Research
-- Financial-Services
+- Financial Services
 - Energy
 - Mining
 tags_raw:
@@ -49,6 +49,7 @@ tags_raw:
 - Financial Services
 - Energy
 - Mining
+- Financial-Services
 apis:
 - name: GlobalData Intelligence Center MCP
   description: >-
