@@ -16,7 +16,7 @@ x-type: company
 x-source: harvest:absent-parent
 specificationVersion: '0.20'
 created: '2026-09-13'
-modified: '2026-09-13'
+modified: '2026-10-06'
 tags:
 - Company
 - Market Intelligence
@@ -95,6 +95,8 @@ apis:
   - type: AgentSkill
     url: skills/_index.yml
 common:
+- url: https://www.globaldata.com/feed/
+  type: BlogRSS
 - type: DeveloperPortal
   url: https://mcp.globaldata.com/
 - type: Documentation
