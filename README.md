@@ -64,8 +64,117 @@
 > Full detail: **[Where this data comes from](https://apievangelist.com/about/where-our-data-comes-from)**
 <!-- API-EVANGELIST-PROVENANCE:END -->
 
-GlobalData Plc (LSE: DATA) is a London-based data, analytics and insights company whose Intelligence Center platform covers companies, deals, news, filings, patents, job postings, research reports, projects and market data across 20+ industry verticals.
+GlobalData Plc is a London-listed data, analytics and insights company (LSE: DATA) whose Intelligence Center platform covers companies, deals, news, filings, patents, job postings, research reports, projects and market data across 20+ industry verticals. Its machine-readable surface is agent-native rather than REST-first: GlobalData operates a first-party Model Context Protocol gateway at mcp.globaldata.com that exposes the estate as callable agent tools, one MCP server endpoint per vertical, behind OAuth 2.1 via GlobalData SSO. The gateway publishes a full developer reference at its host root, RFC 8414 and RFC 9728 OAuth metadata, and an Agentic Resource Discovery (AIR) manifest at /.well-known/ai-catalog.json advertising all 23 vertical endpoints. No OpenAPI, GraphQL SDL, AsyncAPI or SOAP contract is published anywhere.
 
-Its machine-readable surface is agent-native rather than REST-first. GlobalData operates a first-party Model Context Protocol gateway at `mcp.globaldata.com` that exposes the estate as callable agent tools — one MCP server endpoint per vertical, all sharing a single tool interface over Streamable HTTP, behind OAuth 2.1 via GlobalData SSO. The gateway publishes a full developer reference at its host root, RFC 8414 and RFC 9728 OAuth metadata, and an Agentic Resource Discovery (AIR) manifest at `/.well-known/ai-catalog.json` advertising all 23 vertical endpoints.
+**Areas:** Company · Market Intelligence · Business Intelligence · Data · Analytics · MCP · Agents · Company Data · Deals · News · Patents · Research
 
-No OpenAPI, GraphQL SDL, AsyncAPI, Protobuf or SOAP contract is published anywhere, and there is no A2A agent card, security.txt, status page, dated changelog, published pricing or first-party SDK. The live tool schemas are OAuth-gated: an anonymous `tools/list` returns HTTP 401.
+## GlobalData on APIs.io
+
+Everything profiled for GlobalData is published on APIs.io rather than in this repository. Start at the provider page — **[apis.io/providers/globaldata/](https://apis.io/providers/globaldata/)** — or go straight to one of the APIs or properties below.
+
+### APIs (1)
+
+- [GlobalData Intelligence Center MCP](https://apis.io/apis/globaldata/globaldata-intelligence-center-mcp/) — A governed Model Context Protocol gateway that turns GlobalData's business intelligence into tools an AI agent can call directly. One MCP server endpoint…
+
+### Published properties
+
+Each property below is a page on APIs.io carrying the machine-readable artifact and what it says.
+
+#### MCP servers (1)
+
+Model Context Protocol servers that expose the API to agents.
+
+- [GlobalData Intelligence Center MCP](https://apis.io/servers/globaldata/globaldata-intelligence-center-mcp/)
+
+#### Security (2)
+
+Authentication, trust centre, and vulnerability disclosure.
+
+- [Globaldata Authentication](https://apis.io/security/globaldata/globaldata-authentication/)
+- [Globaldata Domain Security](https://apis.io/security/globaldata/globaldata-domain-security/)
+
+#### OAuth scopes (1)
+
+The permissions the API asks for.
+
+- [Globaldata Scopes](https://apis.io/scopes/globaldata/globaldata-scopes/)
+
+#### Plans and pricing (1)
+
+Published plans, tiers and prices.
+
+- [Globaldata Plans Pricing](https://apis.io/plans/globaldata/globaldata-plans-pricing/)
+
+#### Rate limits (1)
+
+Published request limits.
+
+- [Globaldata Rate Limits](https://apis.io/rate-limits/globaldata/globaldata-rate-limits/)
+
+## Where to find this API
+
+Links to the company's own pages. This repository publishes no copy of their specifications — the canonical document is theirs and lives at the URLs below.
+
+- [Website](https://www.globaldata.com/)
+- [Documentation](https://mcp.globaldata.com/)
+- [API reference](https://mcp.globaldata.com/)
+- [Sign up](https://login.globaldata.com/login/index)
+- [Support](https://www.globaldata.com/contact-us/)
+- [Blog](https://www.globaldata.com/data-insights/)
+- [Terms of service](https://www.globaldata.com/terms-conditions/)
+- [Privacy policy](https://www.globaldata.com/privacy-policy/)
+
+## API Evangelist rating
+
+**Kin Score 22.5** — emerging · rubric 0.25.0 · scored 2026-10-23
+
+| Facet | Score |
+|---|---|
+| Discoverability | 61.7 |
+| Contract quality | 0.0 |
+| Contract governance | 18.2 |
+| Operational transparency | 0.0 |
+| Developer ergonomics | 20.8 |
+| Access clarity | 34.2 |
+
+**Agent readiness 23.0** — agent-aware
+
+| Agent-readiness dimension | Result |
+|---|---|
+| Spec Presence | — |
+| Agentic Access | — |
+| Reversibility Documented | — |
+| MCP Server | templated |
+| Auth Clarity | served (partial credit) |
+| Idempotency | — |
+| Error Semantics | — |
+| OpenAPI Examples | — |
+| Rate Limit Signal | documented (partial credit) |
+| Event Surface Described | — |
+| Agent Skills | derived (partial credit) |
+| Well Known Catalog | — |
+| Consent Identity | — |
+| Agent Card | — |
+| Dry Run Mode | — |
+| Delegated Identity | served (partial credit) |
+| Protected Resource Metadata | verified |
+| Dynamic Client Registration | — |
+| Agentic Commerce | — |
+| Pagination Ratio | na |
+| Operation Distinctiveness | na |
+
+**Regulatory alignment 34.4** — Energy & Utilities
+
+The rubric is published at [github.com/api-evangelist/kin-score](https://github.com/api-evangelist/kin-score). The per-check breakdown behind these numbers — which checks were earned, partial or missed — along with score history and how this provider compares to its peers, is available at [apis.io/providers/globaldata/](https://apis.io/providers/globaldata/).
+
+## How this profile is made
+
+API Evangelist profiles a company's public API surface the way a developer would find it: the website, developer portal and documentation, the specifications it publishes, its public repositories, and its pricing, status and changelog pages. From that it derives the properties above — contracts split per API, workflows, schemas, collections, governance rules, plans and rate limits — and scores them against the published [Kin Score rubric](https://github.com/api-evangelist/kin-score).
+
+The artifacts are published on [APIs.io](https://apis.io), not in this repository. This repository is the public record for GlobalData: the place to say something is wrong, missing or out of date, and to ask for a re-score or a removal.
+
+## Open an issue
+
+- **Something about this listing** — a wrong description, a missing API, a stale artifact or a question about the rating: [open an issue on this repository](https://github.com/api-evangelist/globaldata/issues/new).
+- **A new API, or one that is not in the catalog yet** — [submit it on APIs.io](https://apis.io/add/).
+- **Anything else** — [the APIs.io inbox](https://github.com/api-search/inbox/issues/new) or [info@apievangelist.com](mailto:info@apievangelist.com).
